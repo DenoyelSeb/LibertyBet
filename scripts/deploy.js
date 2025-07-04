@@ -1,29 +1,31 @@
 const fs = require("fs");
 const path = require("path");
+const hre = require("hardhat");
+const { getAddress } = require("ethers");
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
-  console.log(`Deploying contract with account: ${deployer.address}`);
+  const [deployer] = await hre.ethers.getSigners();
+  console.log(`Deploying contract with account: ${await deployer.getAddress()}`);
 
-  const network = await ethers.provider.getNetwork();
+  const network = await hre.ethers.provider.getNetwork();
   console.log(`Network: ${network.name} (chainId: ${network.chainId})`);
 
-  const PredictionMarket = await ethers.getContractFactory("PredictionMarket");
+  const PredictionMarket = await hre.ethers.getContractFactory("PredictionMarket");
 
-  // Replace with FTSO contract address on Coston2
-  const ftsoAddress = "0x1000000000000000000000000000000000000001";
+  const ftsoAddress = getAddress("0x3244690b7cb0d39f7f13b4b15aad3e7ce571ae44");
 
   const contract = await PredictionMarket.deploy(ftsoAddress);
-  await contract.deployed();
+  await contract.waitForDeployment(); 
 
-  console.log(`Contract deployed to: ${contract.address}`);
+  const address = await contract.getAddress(); 
+  console.log(`Contract deployed to: ${address}`);
 
   // Save to deployed.json
   const deploymentInfo = {
     contractName: "PredictionMarket",
-    address: contract.address,
+    address,
     network: network.name,
-    chainId: network.chainId,
+    chainId: Number(network.chainId),
     deployedAt: new Date().toISOString(),
   };
 
