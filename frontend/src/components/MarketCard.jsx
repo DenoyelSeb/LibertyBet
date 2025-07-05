@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import OraclePrices from "./OraclePrices";     // ← IMPORT
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from "../contractConfig";
+import OraclePrices from "./OraclePrices";
 
-export default function MarketCard({ market }) {
+const MarketCard = ({ market, price }) => {
   const [yesPool, setYesPool] = useState(0);
   const [noPool, setNoPool] = useState(0);
   const [endTime, setEndTime] = useState(null);
@@ -22,8 +22,8 @@ export default function MarketCard({ market }) {
       setYesPool(ethers.formatEther(yes));
       setNoPool(ethers.formatEther(no));
 
-      const md = await contract.markets(market.id);
-      setEndTime(new Date(Number(md.endTime) * 1000).toLocaleString());
+      const marketData = await contract.markets(market.id);
+      setEndTime(new Date(Number(marketData.endTime) * 1000).toLocaleString());
     } catch (e) {
       console.error("Error fetching pools:", e);
     }
@@ -31,51 +31,78 @@ export default function MarketCard({ market }) {
 
   useEffect(() => {
     refreshData();
-    const interval = setInterval(refreshData, 15000);
+    const interval = setInterval(refreshData, 15000); // Refresh every 15 sec
     return () => clearInterval(interval);
   }, []);
 
-  const placeBet = async (yes) => { /*… inchangé…*/ };
-  const withdraw = async () => { /*… inchangé…*/ };
+  const placeBet = async (yes) => {
+    console.log("Bouton", yes ? "YES" : "NO", "cliqué pour market id", market.id);
+    try {
+      setLoading(true);
+      setError(null);
+      setTxHash(null);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      const value = ethers.parseEther("0.01");
+
+      const tx = yes
+        ? await contract.betYes(market.id, { value })
+        : await contract.betNo(market.id, { value });
+
+      await tx.wait();
+      setTxHash(tx.hash);
+      await refreshData();
+    } catch (e) {
+      console.error(e);
+      setError(e.message || "Bet failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const withdraw = async () => {
+    console.log("Bouton withdraw cliqué pour market id", market.id);
+    try {
+      setWithdrawing(true);
+      setError(null);
+      setTxHash(null);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      const tx = await contract.claim(market.id);
+      await tx.wait();
+
+      setTxHash(tx.hash);
+    } catch (e) {
+      console.error(e);
+      setError(e.message || "Withdraw failed");
+    } finally {
+      setWithdrawing(false);
+    }
+  };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow space-y-3">
-      <h3 className="text-lg font-semibold">{market.question}</h3>
-      <p className="text-sm text-gray-500">Category: {market.category}</p>
+    <div style={styles.card}>
+        <h3>{market.question}</h3>
+        <p><strong>Category:</strong> {market.category}</p>
+        {market.oracleId && <OraclePrices id={market.oracleId} />}
+        {endTime && <p><strong>Resolution:</strong> {endTime}</p>}
+        <p><strong>Pool YES:</strong> {yesPool} ETH</p>
+        <p><strong>Pool NO:</strong> {noPool} ETH</p>
 
-      {/* ORACLE PRICE, uniquement si on a un oracleId */}
-      {market.oracleId && <OraclePrices id={market.oracleId} />}
-
-      {/* DATE DE RÉSOLUTION */}
-      {endTime && (
-        <p className="text-sm text-gray-600">
-          <strong>Resolution:</strong> {endTime}
-        </p>
-      )}
-
-      <p><strong>Pool YES:</strong> {yesPool} ETH</p>
-      <p><strong>Pool NO:</strong> {noPool} ETH</p>
-
-      <div className="flex gap-4 mt-4">
-        <button
-          onClick={() => placeBet(true)}
-          disabled={loading}
-          className="px-5 py-2 bg-green-600 text-white rounded-lg text-base hover:bg-green-700"
-        >
+      <div style={styles.buttonContainer}>
+        <button onClick={() => placeBet(true)} disabled={loading}>
           ✅ YES
         </button>
-        <button
-          onClick={() => placeBet(false)}
-          disabled={loading}
-          className="px-5 py-2 bg-red-600 text-white rounded-lg text-base hover:bg-red-700"
-        >
+        <button onClick={() => placeBet(false)} disabled={loading}>
           ❌ NO
         </button>
-        <button
-          onClick={withdraw}
-          disabled={withdrawing}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg text-base hover:bg-blue-700"
-        >
+        <button onClick={withdraw} disabled={withdrawing}>
           💸 Withdraw
         </button>
       </div>
@@ -83,19 +110,35 @@ export default function MarketCard({ market }) {
       {loading && <p>⏳ Placing bet...</p>}
       {withdrawing && <p>💸 Withdrawing...</p>}
       {txHash && (
-        <p className="text-sm text-gray-700">
+        <p>
           ✅ Tx:{" "}
           <a
             href={`https://coston2-explorer.flare.network/tx/${txHash}`}
             target="_blank"
             rel="noreferrer"
-            className="underline text-blue-600"
           >
-            {txHash.slice(0, 10)}…
+            {txHash.slice(0, 10)}...
           </a>
         </p>
       )}
-      {error && <p className="text-sm text-red-500">⚠ {error}</p>}
+      {error && <p style={{ color: "red" }}>⚠ {error}</p>}
     </div>
   );
-}
+};
+
+const styles = {
+  card: {
+    border: "1px solid #ccc",
+    borderRadius: 8,
+    padding: 20,
+    marginBottom: 20,
+    backgroundColor: "#f9f9f9",
+  },
+  buttonContainer: {
+    display: "flex",
+    gap: 10,
+    marginTop: 12,
+  },
+};
+
+export default MarketCard;
