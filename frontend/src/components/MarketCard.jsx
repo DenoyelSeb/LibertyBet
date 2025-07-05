@@ -86,26 +86,68 @@ const MarketCard = ({ market, price }) => {
     }
   };
 
+  let yesProb = null;
+  const yes = Number(yesPool);
+  const no = Number(noPool);
+  if (yes > 0 || no > 0) {
+    yesProb = ((yes / (yes + no)) * 100).toFixed(1);
+  } else {
+    yesProb = "50";
+  };
+
   return (
     <div style={styles.card}>
-        <h3>{market.question}</h3>
-        <p><strong>Category:</strong> {market.category}</p>
-        {market.oracleId && <OraclePrices id={market.oracleId} />}
-        {endTime && <p><strong>Resolution:</strong> {endTime}</p>}
-        <p><strong>Pool YES:</strong> {yesPool} ETH</p>
-        <p><strong>Pool NO:</strong> {noPool} ETH</p>
+      <h3>{market.question}</h3>
+      <p><strong>Category:</strong> {market.category}</p>
+      {market.oracleId && <OraclePrices id={market.oracleId} />}
+      {endTime && <p><strong>Resolution:</strong> {endTime}</p>}
+      <p><strong>Pool YES:</strong> {yesPool} ETH</p>
+      <p><strong>Pool NO:</strong> {noPool} ETH</p>
+      <p>
+        <strong>Market Probability:</strong>{" "}
+        <span style={{ color: "#0b7" }}>
+          YES {yesProb}% / NO {(100 - yesProb).toFixed(1)}%
+        </span>
+      </p>
 
       <div style={styles.buttonContainer}>
-        <button onClick={() => placeBet(true)} disabled={loading}>
-          ✅ YES
-        </button>
-        <button onClick={() => placeBet(false)} disabled={loading}>
-          ❌ NO
-        </button>
-        <button onClick={withdraw} disabled={withdrawing}>
-          💸 Withdraw
-        </button>
-      </div>
+            <button
+                onClick={() => placeBet(true)}
+                disabled={loading}
+                style={{
+                ...styles.bigButton,
+                background: "#22c55e",
+                color: "white",
+                opacity: loading ? 0.7 : 1,
+                }}
+            >
+                ✅ YES
+            </button>
+            <button
+                onClick={() => placeBet(false)}
+                disabled={loading}
+                style={{
+                ...styles.bigButton,
+                background: "#ef4444",
+                color: "white",
+                opacity: loading ? 0.7 : 1,
+                }}
+            >
+                ❌ NO
+            </button>
+            <button
+                onClick={withdraw}
+                disabled={withdrawing}
+                style={{
+                ...styles.bigButton,
+                background: "#6366f1",
+                color: "white",
+                opacity: withdrawing ? 0.7 : 1,
+                }}
+            >
+                💸 Withdraw
+            </button>
+        </div>
 
       {loading && <p>⏳ Placing bet...</p>}
       {withdrawing && <p>💸 Withdrawing...</p>}
@@ -139,6 +181,17 @@ const styles = {
     gap: 10,
     marginTop: 12,
   },
+  bigButton: {
+  flex: 1,
+  fontSize: 20,
+  padding: "14px 0",
+  border: "none",
+  borderRadius: 8,
+  cursor: "pointer",
+  transition: "all .13s",
+  fontWeight: "bold",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+},
 };
 
 export default MarketCard;

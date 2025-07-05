@@ -8,31 +8,24 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 text-gray-800 font-sans">
       {/* Header */}
-      <header className="bg-white shadow p-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-blue-600">🧠 LibertyBet</h1>
-        <ConnectWallet />
+      <header className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 shadow-md p-6">
+        <div className="flex flex-col items-center justify-center gap-2">
+          <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow">🧠 LibertyBet</h1>
+          <ConnectWallet />
+        </div>
       </header>
 
       {/* Main */}
-      <main className="p-6 max-w-screen-lg mx-auto scale-105">
-
-        {/* Markets (split horizontally) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <main className="flex flex-col items-center min-h-[80vh] py-10 px-2">
+        <div className="w-full max-w-6xl grid border border-red-600 grid-cols-2 gap-10">
           {/* Global Markets */}
-          <section className="bg-white rounded-lg shadow p-4 w-full lg:w-1/2">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl">🌍</span>
-              <h2 className="text-xl font-semibold">Global Markets</h2>
-            </div>
+          <section className="market-column flex-1 mb-10 lg:mb-0">
+            <div className="category-header mb-4"><span>🌍</span>Global Markets</div>
             <MarketList category="global" />
           </section>
-
           {/* Local Markets */}
-          <section className="bg-white rounded-lg shadow p-4 w-full lg:w-1/2">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl">🇬🇪</span>
-              <h2 className="text-xl font-semibold">Local Markets</h2>
-            </div>
+          <section className="market-column flex-1">
+            <div className="category-header mb-4"><span>🇬🇪</span>Local Markets</div>
             <MarketList category="local" />
           </section>
         </div>
