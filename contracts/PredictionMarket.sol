@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// Interface to interact with Flare FTSO V2 (Coston2)
-interface IFTSO {
-    function getCurrentPrice(bytes21 _ftsoId) external view returns (uint256);
-}
+import "./interfaces/AggregatorV3Interface.sol";
 
 contract PredictionMarket {
     struct Market {
         string question;
+        int256 targetPrice; // ex: 3000 * 1e8
         uint256 endTime;
         uint256 yesPool;
         uint256 noPool;
@@ -22,26 +20,32 @@ contract PredictionMarket {
     uint256 public marketCount;
     mapping(uint256 => Market) public markets;
 
-    IFTSO public ftso; // Flare FTSO oracle
+    AggregatorV3Interface public priceFeed;
 
-    // Feed ID for ETH/USD on Coston2 (in bytes21)
-    bytes21 constant ETH_USD_ID = bytes21(0x014554482f55534400000000000000000000000000);
-
-    constructor(address _ftsoAddress) {
-        owner = msg.sender;
-        ftso = IFTSO(_ftsoAddress);
-    }
+    event MarketCreated(uint256 indexed marketId, string question, int256 targetPrice, uint256 endTime);
+    event MarketResolved(uint256 indexed marketId, bool outcome, int256 resolvedPrice);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
         _;
     }
 
+    constructor(address _priceFeed) {
+        owner = msg.sender;
+        priceFeed = AggregatorV3Interface(_priceFeed);
+    }
+
     /// @notice Create a new prediction market
-    function createMarket(string calldata _question, uint256 _durationInSeconds) external onlyOwner {
+    function createMarket(
+        string calldata _question,
+        int256 _targetPrice,
+        uint256 _durationInSeconds
+    ) external onlyOwner {
         Market storage m = markets[marketCount++];
         m.question = _question;
+        m.targetPrice = _targetPrice;
         m.endTime = block.timestamp + _durationInSeconds;
+        emit MarketCreated(marketCount - 1, _question, _targetPrice, m.endTime);
     }
 
     /// @notice Bet on "Yes"
@@ -60,13 +64,16 @@ contract PredictionMarket {
         m.noBets[msg.sender] += msg.value;
     }
 
-    /// @notice Resolve the market with given outcome
-    function resolveMarket(uint256 marketId, bool outcome) external onlyOwner {
+    /// @notice Resolve the market with Chainlink price feed
+    function resolveMarket(uint256 marketId) external onlyOwner {
         Market storage m = markets[marketId];
         require(block.timestamp >= m.endTime, "Market not ended");
         require(!m.resolved, "Already resolved");
-        m.outcome = outcome;
+
+        int256 price = getEthUsd();
+        m.outcome = price >= m.targetPrice; // "Yes" wins if price >= target
         m.resolved = true;
+        emit MarketResolved(marketId, m.outcome, price);
     }
 
     /// @notice Claim reward after resolution
@@ -91,17 +98,18 @@ contract PredictionMarket {
         payable(msg.sender).transfer(payout);
     }
 
-    /// @notice Get ETH/USD price from Flare FTSO
-    function getEthUsd() public view returns (uint256) {
-        return ftso.getCurrentPrice(ETH_USD_ID); // returns price with 1e8 decimals
-    }
+    /// @notice Get latest ETH/USD price from Chainlink (8 decimals)
+    function getEthUsd() public view returns (int256) {
+    (
+        , // uint80 roundID
+        int256 price,
+        , // uint256 startedAt
+        , // uint256 updatedAt
+        // uint80 answeredInRound
+    ) = priceFeed.latestRoundData();
+    return price; // 8 decimals (for ETH/USD on Sepolia)
+}
 
-    /// @notice Convert to GEL/ETH using front-provided USD/GEL rate
-    /// @param usdPerGel Price of 1 GEL in USD * 1e8 (passed from frontend)
-    function getGelPerEth(uint256 usdPerGel) public view returns (uint256) {
-        uint256 ethUsd = getEthUsd(); // ETH/USD price from oracle
-        return (ethUsd * 1e8) / usdPerGel; // returns GEL/ETH * 1e8
-    }
 
     /// @notice Get pools for frontend display
     function getPools(uint256 marketId) external view returns (uint256 yes, uint256 no) {
@@ -109,6 +117,5 @@ contract PredictionMarket {
         return (m.yesPool, m.noPool);
     }
 
-    /// @notice Fallback to receive ETH
     receive() external payable {}
 }

@@ -1,31 +1,35 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
-const ethers = hre.ethers;
 
 describe("PredictionMarket", function () {
-  let PredictionMarket, predictionMarket, owner;
-
-  const dummyFtso = "0x3244690b7cb0d39f7f13b4b15aad3e7ce571ae44"; // adress in lowercase
+  let owner, mockPriceFeed, PredictionMarket, predictionMarket;
 
   beforeEach(async () => {
-    [owner] = await ethers.getSigners();
-    PredictionMarket = await ethers.getContractFactory("PredictionMarket");
-    predictionMarket = await PredictionMarket.deploy(dummyFtso);
+    [owner] = await hre.ethers.getSigners();
+
+    // Deploy MockPriceFeed
+    const MockPriceFeed = await hre.ethers.getContractFactory("MockPriceFeed");
+    mockPriceFeed = await MockPriceFeed.deploy();
+    await mockPriceFeed.waitForDeployment();
+
+    // Deploy PredictionMarket with address of MockPriceFeed
+    PredictionMarket = await hre.ethers.getContractFactory("PredictionMarket");
+    predictionMarket = await PredictionMarket.deploy(await mockPriceFeed.getAddress());
     await predictionMarket.waitForDeployment();
   });
 
   it("should deploy correctly", async () => {
-    const actual = await predictionMarket.ftso();
-    // Case-insensitive comparison (lowercase == uppercase)
-    expect(actual.toLowerCase()).to.equal(dummyFtso.toLowerCase());
+    expect(await predictionMarket.owner()).to.equal(owner.address);
   });
 
-  it("should call getEthUsd from FTSO", async () => {
-    try {
-      const price = await predictionMarket.getEthUsd();
-      console.log("ETH/USD price:", price.toString());
-    } catch (e) {
-      console.error("Error fetching price from FTSO:", e.message);
-    }
+  it("should call getEthUsd and get the mock value", async () => {
+    const price = await predictionMarket.getEthUsd();
+    expect(price).to.equal("200000000000"); // 2000e8
+  });
+
+  it("should update price in mock and get the new value", async () => {
+    await mockPriceFeed.setLatestAnswer(3131e8);
+    const price = await predictionMarket.getEthUsd();
+    expect(price).to.equal("313100000000"); // 3131e8
   });
 });

@@ -1,7 +1,7 @@
 {
   "contractName": "PredictionMarket",
-  "address": "0x672d68869948C733DC0bdA055e14C1C4aE2EBa6d",
-  "network": "coston2",
-  "chainId": 114,
-  "deployedAt": "2025-07-04T23:19:10.169Z"
+  "address": "0x1cD544308FCDCC9510bdCC7A680ED10fD947E08b",
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deployedAt": "2025-07-05T09:59:13.625Z"
 }

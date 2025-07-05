@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const hre = require("hardhat");
-const { getAddress } = require("ethers");
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
@@ -12,12 +11,14 @@ async function main() {
 
   const PredictionMarket = await hre.ethers.getContractFactory("PredictionMarket");
 
-  const ftsoAddress = getAddress("0x3244690b7cb0d39f7f13b4b15aad3e7ce571ae44");
+  // Adresse Chainlink ETH/USD pour Sepolia
+  // https://docs.chain.link/data-feeds/price-feeds/addresses/?network=sepolia
+  const priceFeedAddress = "0x694AA1769357215DE4FAC081bf1f309aDC325306";
 
-  const contract = await PredictionMarket.deploy(ftsoAddress);
-  await contract.waitForDeployment(); 
+  const contract = await PredictionMarket.deploy(priceFeedAddress);
+  await contract.waitForDeployment();
 
-  const address = await contract.getAddress(); 
+  const address = await contract.getAddress();
   console.log(`Contract deployed to: ${address}`);
 
   // Save to deployed.json

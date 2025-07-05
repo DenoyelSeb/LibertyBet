@@ -22,6 +22,8 @@
     "hardhat": "^2.25.0"
   },
   "dependencies": {
+    "@chainlink/contracts": "^1.4.0",
+    "@flarenetwork/flare-periphery-contract-artifacts": "^0.1.33",
     "@flarenetwork/flare-periphery-contracts": "^0.1.33"
   }
 }
