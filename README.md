@@ -77,10 +77,12 @@ npm start
 Go to localhost:3000 and use MetaMask (Sepolia network)
 
 🧪 Demo & Screenshots
+
 Screenshots in the /demo folder
 (or add a Loom/YouTube video link here if you want)
 
 ⚡ Limitations / Next Steps
+
 CoinGecko oracle is subject to API limits (CORS/rate limit → wait 1h if you see “429 Too Many Requests”)
 
 Withdrawals are only available after the market resolution date and once the market is resolved
@@ -88,6 +90,7 @@ Withdrawals are only available after the market resolution date and once the mar
 Next: allow anyone to create markets (“propose your own market”), add more oracles, open source
 
 🏅 Why LibertyBet?
+
 A local alternative to Polymarket, tailored to the Georgian mindset (and scalable worldwide)
 
 Unique hybrid oracle system in this segment
@@ -97,6 +100,7 @@ Dynamic probabilities, full transparency, fast UX
 Scalable business model and viral “bottom-up” potential via local communities
 
 🙋‍♂️ Contact
+
 Developed for ETHGlobal, 2024.
 Repo: github.com/DenoyelSeb/LibertyBet
 Feel free to contact for Web3/Fintech collabs or feedback!
